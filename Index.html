@@ -2,98 +2,120 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lector DUI a QR - El Salvador</title>
-  <!-- Tailwind CSS para diseño moderno -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Librería de decodificación PDF417 -->
+  <!-- Decodificador ZXing PDF417 -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <!-- Librería de generación de código QR -->
+  <!-- Generador QRCodeJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     @keyframes scanline {
-      0% { top: 0%; }
-      50% { top: 95%; }
-      100% { top: 0%; }
+      0% { top: 0%; opacity: 0.8; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 0%; opacity: 0.8; }
     }
     .scanner-line {
-      animation: scanline 2.2s infinite linear;
+      animation: scanline 2s infinite ease-in-out;
     }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-between p-4 font-sans">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-between p-4 font-sans select-none">
 
   <!-- Encabezado -->
-  <header class="w-full max-w-md text-center py-4 border-b border-gray-800">
-    <h1 class="text-xl font-bold tracking-wide text-emerald-400">Escáner DUI a QR</h1>
-    <p class="text-xs text-gray-400 mt-1">Control de Acceso Laboral</p>
+  <header class="w-full max-w-md text-center py-3 border-b border-gray-800 flex items-center justify-between">
+    <div class="text-left">
+      <h1 class="text-lg font-bold tracking-wide text-emerald-400">Escáner DUI v2.0</h1>
+      <p class="text-[10px] text-gray-400">Generador de QR Temporal de Acceso</p>
+    </div>
+    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 font-mono px-2 py-1 rounded border border-emerald-500/30">ONLINE</span>
   </header>
 
   <!-- Área Principal -->
-  <main class="w-full max-w-md flex-1 flex flex-col items-center justify-center my-4">
+  <main class="w-full max-w-md flex-1 flex flex-col items-center justify-center my-3">
     
     <!-- Visor de la Cámara -->
-    <div id="camera-card" class="w-full bg-gray-900 rounded-2xl p-4 border border-gray-800 shadow-2xl relative">
+    <div id="camera-card" class="w-full bg-gray-900 rounded-2xl p-3 border border-gray-800 shadow-2xl relative">
       <div id="video-wrapper" class="relative aspect-[4/3] w-full bg-black rounded-xl overflow-hidden border border-gray-700 flex items-center justify-center">
-        <video id="video" class="w-full h-full object-cover"></video>
+        <video id="video" class="w-full h-full object-cover" playsinline></video>
         
         <!-- Guías de Enfoque PDF417 -->
         <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none hidden">
-          <div class="w-4/5 h-24 border-2 border-emerald-400 rounded-lg relative overflow-hidden shadow-[0_0_15px_rgba(52,211,153,0.3)]">
-            <div class="scanner-line absolute left-0 right-0 h-0.5 bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+          <div class="w-5/6 h-28 border-2 border-emerald-400 rounded-xl relative overflow-hidden shadow-[0_0_20px_rgba(52,211,153,0.4)]">
+            <div class="scanner-line absolute left-0 right-0 h-0.5 bg-emerald-400 shadow-[0_0_10px_#34d399]"></div>
           </div>
-          <p class="text-[10px] text-emerald-300 mt-2 font-mono bg-black/60 px-2 py-1 rounded">Alinee el código PDF417 del DUI aquí</p>
+          <p class="text-[10px] text-emerald-300 mt-2 font-mono bg-black/70 px-2.5 py-1 rounded-full border border-emerald-500/30">
+            Alinee el código impreso del reverso del DUI
+          </p>
         </div>
 
-        <p id="camera-placeholder" class="text-xs text-gray-500 text-center px-4">
-          Presione "Activar Cámara" para otorgar permisos de escaneo.
-        </p>
+        <div id="camera-placeholder" class="text-center px-6">
+          <svg class="w-10 h-10 mx-auto text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M68 21H4a2 2 0 01-2-2V5a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v14a2 2 0 01-2 2z"></path>
+          </svg>
+          <p class="text-xs text-gray-400">Presione el botón para activar la cámara</p>
+        </div>
       </div>
 
-      <!-- Botones de Acción -->
-      <div class="mt-4 flex gap-2">
-        <button id="btn-start" onclick="requestAndStartCamera()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-900/40 text-sm">
-          Activar Cámara
+      <!-- Barra de Controles Auxiliares -->
+      <div class="mt-3 flex items-center justify-between gap-2">
+        <button id="btn-torch" onclick="toggleTorch()" class="hidden bg-gray-800 hover:bg-gray-700 text-amber-400 p-2.5 rounded-xl border border-gray-700 text-xs font-medium transition flex items-center justify-center gap-1">
+          💡 Flash
         </button>
-        <button id="btn-stop" onclick="stopScan()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-rose-900/40 text-sm hidden">
+        <select id="camera-select" onchange="changeCamera()" class="hidden bg-gray-800 text-gray-200 text-xs rounded-xl p-2.5 border border-gray-700 flex-1 outline-none">
+        </select>
+      </div>
+
+      <!-- Botón Principal -->
+      <div class="mt-3">
+        <button id="btn-start" onclick="requestAndStartCamera()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-900/40 text-sm flex items-center justify-center gap-2">
+          <span>Activar Cámara</span>
+        </button>
+        <button id="btn-stop" onclick="stopScan()" class="w-full bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-rose-900/40 text-sm hidden">
           Detener Cámara
         </button>
       </div>
     </div>
 
-    <!-- Modal / Tarjeta del QR Temporal (Oculta por defecto) -->
-    <div id="qr-modal" class="w-full bg-gray-900 rounded-2xl p-6 border border-emerald-500/40 shadow-2xl mt-4 hidden text-center">
-      <span class="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold rounded-full border border-emerald-500/20 mb-3">
-        CÓDIGO QR VÁLIDO GENERADO
-      </span>
+    <!-- Tarjeta del QR Temporal Generado -->
+    <div id="qr-modal" class="w-full bg-gray-900 rounded-2xl p-5 border border-emerald-500/50 shadow-2xl mt-3 hidden text-center">
+      <div class="flex items-center justify-between mb-2">
+        <span class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30 uppercase tracking-wider">
+          Acceso Temporal
+        </span>
+        <span id="dui-display" class="text-xs font-mono text-gray-300 font-bold"></span>
+      </div>
       
-      <!-- Contenedor del QR -->
-      <div class="flex justify-center my-2">
-        <div id="qrcode" class="p-3 bg-white rounded-xl shadow-inner border border-gray-200"></div>
+      <!-- Contenedor del QR optimizado para escáneres ópticos -->
+      <div class="flex justify-center p-3 bg-white rounded-2xl shadow-2xl my-2 border-4 border-white">
+        <div id="qrcode"></div>
       </div>
 
-      <!-- Temporizador -->
-      <div class="mt-4 space-y-1">
-        <div class="text-xs text-gray-400">Destrucción automática en RAM:</div>
-        <div id="timer" class="text-2xl font-bold font-mono text-amber-400">30s</div>
+      <!-- Cuenta Regresiva -->
+      <div class="mt-3 bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex items-center justify-between px-4">
+        <span class="text-xs text-gray-400">Expiración en RAM:</span>
+        <span id="timer" class="text-xl font-bold font-mono text-amber-400">30s</span>
       </div>
 
-      <button onclick="closeQR()" class="mt-5 w-full bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium py-2.5 rounded-xl text-xs transition border border-gray-700">
-        Escanear Otro DUI
+      <button onclick="closeQR()" class="mt-3 w-full bg-gray-800 hover:bg-gray-700 active:scale-[0.99] text-gray-200 font-medium py-2.5 rounded-xl text-xs transition border border-gray-700">
+        Escanear Siguiente DUI
       </button>
     </div>
 
   </main>
 
-  <!-- Pie de página -->
-  <footer class="w-full max-w-md text-center py-2 text-[10px] text-gray-600">
-    Procesamiento local efímero • Seguridad y privacidad garantizada
+  <!-- Pie de Página -->
+  <footer class="w-full max-w-md text-center py-1 text-[10px] text-gray-600">
+    Procesamiento en memoria volátil • El Salvador
   </footer>
 
   <script>
     let codeReader;
     let selectedDeviceId;
     let timerInterval;
+    let currentStream = null;
+    let torchOn = false;
 
     window.addEventListener('load', () => {
       codeReader = new ZXing.BrowserPDF417Reader();
@@ -101,18 +123,21 @@
 
     async function requestAndStartCamera() {
       try {
-        // Solicita el permiso expreso de uso de cámara
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        stream.getTracks().forEach(track => track.stop());
-
         const videoDevices = await codeReader.getVideoInputDevices();
-        
         if (videoDevices.length === 0) {
-          alert("No se detectaron cámaras en su dispositivo.");
+          alert("No se detectaron cámaras en el dispositivo.");
           return;
         }
 
-        // Priorizar la cámara trasera
+        const select = document.getElementById('camera-select');
+        select.innerHTML = '';
+        videoDevices.forEach((device, index) => {
+          const opt = document.createElement('option');
+          opt.value = device.deviceId;
+          opt.text = device.label || `Cámara ${index + 1}`;
+          select.appendChild(opt);
+        });
+
         const backCam = videoDevices.find(d => 
           d.label.toLowerCase().includes('back') || 
           d.label.toLowerCase().includes('trasera') || 
@@ -120,53 +145,105 @@
         );
         
         selectedDeviceId = backCam ? backCam.deviceId : videoDevices[0].deviceId;
+        select.value = selectedDeviceId;
 
-        // Modificar estado visual
-        document.getElementById('camera-placeholder').classList.add('hidden');
-        document.getElementById('overlay').classList.remove('hidden');
-        document.getElementById('btn-start').classList.add('hidden');
-        document.getElementById('btn-stop').classList.remove('hidden');
+        if(videoDevices.length > 1) select.classList.remove('hidden');
 
-        // Escanear en tiempo real
-        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-          if (result) {
-            stopScan();
-            generateTemporaryQR(result.text);
-          }
-        });
+        startScanningCurrentDevice();
 
       } catch (err) {
-        alert("Error de permisos de cámara: " + err.message);
+        alert("Permiso de cámara denegado o error de hardware: " + err.message);
       }
     }
 
-    function stopScan() {
-      if (codeReader) {
-        codeReader.reset();
+    function startScanningCurrentDevice() {
+      document.getElementById('camera-placeholder').classList.add('hidden');
+      document.getElementById('overlay').classList.remove('hidden');
+      document.getElementById('btn-start').classList.add('hidden');
+      document.getElementById('btn-stop').classList.remove('hidden');
+
+      codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+        if (result) {
+          // Feedback de vibración si el dispositivo lo soporta
+          if (navigator.vibrate) navigator.vibrate(100);
+          
+          stopScan();
+          generateTemporaryQR(result.text);
+        }
+      });
+
+      // Intentar detectar soporte de Linterna/Flash
+      setTimeout(checkTorchSupport, 1000);
+    }
+
+    async function checkTorchSupport() {
+      const videoEl = document.getElementById('video');
+      if (videoEl.srcObject) {
+        currentStream = videoEl.srcObject;
+        const track = currentStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        if (capabilities.torch) {
+          document.getElementById('btn-torch').classList.remove('hidden');
+        }
       }
+    }
+
+    async function toggleTorch() {
+      if (currentStream) {
+        const track = currentStream.getVideoTracks()[0];
+        torchOn = !torchOn;
+        try {
+          await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+        } catch (e) {
+          console.error("Error al controlar el flash:", e);
+        }
+      }
+    }
+
+    function changeCamera() {
+      selectedDeviceId = document.getElementById('camera-select').value;
+      if (codeReader) codeReader.reset();
+      startScanningCurrentDevice();
+    }
+
+    function stopScan() {
+      if (codeReader) codeReader.reset();
+      torchOn = false;
+      document.getElementById('btn-torch').classList.add('hidden');
+      document.getElementById('camera-select').classList.add('hidden');
       document.getElementById('overlay').classList.add('hidden');
       document.getElementById('camera-placeholder').classList.remove('hidden');
       document.getElementById('btn-start').classList.remove('hidden');
       document.getElementById('btn-stop').classList.add('hidden');
     }
 
+    function extractDuiNumber(rawText) {
+      // Intenta extraer el formato clásico de DUI (00000000-0) si está presente en el stream
+      const duiMatch = rawText.match(/\b\d{8}-\d\b/);
+      return duiMatch ? duiMatch[0] : "DUI Escaneado";
+    }
+
     function generateTemporaryQR(rawText) {
       const modal = document.getElementById('qr-modal');
       const qrContainer = document.getElementById('qrcode');
       const timerLabel = document.getElementById('timer');
+      const duiDisplay = document.getElementById('dui-display');
       
       qrContainer.innerHTML = "";
+      duiDisplay.innerText = extractDuiNumber(rawText);
       modal.classList.remove('hidden');
 
-      // Generar el QR
+      // Configuración del QR de alto contraste
       new QRCode(qrContainer, {
         text: rawText,
-        width: 200,
-        height: 200,
+        width: 220,
+        height: 220,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
       });
 
-      // Cuenta regresiva de 30 segundos
+      // Conteo regresivo de 30 segundos
       let timeLeft = 30;
       timerLabel.innerText = timeLeft + "s";
       
